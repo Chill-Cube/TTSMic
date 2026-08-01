@@ -11,10 +11,13 @@ pygame.mixer.init()
 
 class TTSMicApp:
 
-    """A class handling TTS UI, Input and local Output. """
+    """A tkinter-based text-to-speech application that converts text input to audio playback."""
      
     def __init__(self):
-        """Initialises ui elements"""
+        """Initialise the TTS Application with ui elements
+
+        Creates all necessary GUI elements and sets up the user interface.
+        """
 
         self.root = customtkinter.CTk()
         self.frame = customtkinter.CTkFrame(self.root, fg_color="transparent")
@@ -25,7 +28,7 @@ class TTSMicApp:
         self.setup_ui()
 
     def setup_ui(self):
-        """Give ui properties and pack it into the root"""
+        """Give ui properties and pack it into the root window."""
 
         self.root.geometry("500x300")
         self.root.title("TTSMic")
@@ -41,7 +44,10 @@ class TTSMicApp:
         self.button.pack(pady=12)
 
     def check_playback(self, file_name):
-        """Loops until the music player isn't playing any music. From there, it deletes the audio file."""
+        """Loops until the music player isn't playing any music. From there, it deletes the audio file.
+        Args:
+            file_name (str): Path to the temporary audio file to be deleted
+        """
 
         if pygame.mixer.music.get_busy():
             self.root.after(150, self.check_playback, file_name)
@@ -50,14 +56,18 @@ class TTSMicApp:
             os.remove(file_name)
 
     def say_tts_input(self, event):
-        """Calls say_tts from the entry bind."""
+        """Calls say_tts from the entry bind.
+        
+        Args:
+            event: The tkinter event object (not used)
+        """
 
         self.say_tts()
 
     def say_tts(self):
         """Retrieves text in the entry box then turns it into speech in a .mp3 file."""
 
-        if pygame.mixer.music.get_busy(): return # Prevents spam
+        if pygame.mixer.music.get_busy(): return # Prevents spamming audio playback
 
         file_name = f"{time.time()}.mp3"
 
@@ -70,6 +80,7 @@ class TTSMicApp:
 
 
     def run(self):
+        """Start the main application loop."""
         self.root.mainloop()
 
 if __name__ == "__main__":

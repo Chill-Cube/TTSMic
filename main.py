@@ -3,13 +3,13 @@ from gtts import gTTS
 import pygame
 import time
 import os
+from virtual_mic import VirtualMic
+import threading
 
 customtkinter.set_appearance_mode("dark")
 customtkinter.set_default_color_theme("dark-blue")
 
-pygame.mixer.init()
-
-class TTSMicApp:
+class TTSApp:
 
     """A tkinter-based text-to-speech application that converts text input to audio playback."""
      
@@ -24,6 +24,8 @@ class TTSMicApp:
         self.label = customtkinter.CTkLabel(self.frame, text="TTSMic", font=("Arimo", 50))
         self.entry = customtkinter.CTkEntry(self.frame, placeholder_text="Speak your mind", width=400)
         self.button = customtkinter.CTkButton(self.frame, text="Enter", command=self.say_tts)
+
+        pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
 
         self.setup_ui()
 
@@ -73,18 +75,36 @@ class TTSMicApp:
 
         tts = gTTS(text=self.entry.get(), lang='en')
         tts.save(file_name)
-        pygame.mixer.music.load(file_name)
-        pygame.mixer.music.play()
 
-        self.check_playback(file_name) # Start check loop
+        mic = VirtualMic()
 
+        def play_to_others():
+            mic.play_in_mic(file_name)
+
+        def play_to_self():
+            pygame.mixer.music.load(file_name)
+            pygame.mixer.music.play()
+
+        thread1 = threading.Thread(target=play_to_others) 
+        thread2 = threading.Thread(target=play_to_self) 
+
+        thread1.start()
+        thread2.start()
+
+        thread1.join()
+        thread2.join()
+
+        
+        pygame.mixer.music.unload()
+        os.remove(file_name)
+        
 
     def run(self):
         """Start the main application loop."""
         self.root.mainloop()
 
 if __name__ == "__main__":
-    app = TTSMicApp()
+    app = TTSApp()
     app.run()
 
 

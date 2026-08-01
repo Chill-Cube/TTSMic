@@ -12,7 +12,7 @@ customtkinter.set_default_color_theme("dark-blue")
 class TTSApp:
 
     """A tkinter-based text-to-speech application that converts text input to audio playback."""
-     
+
     def __init__(self):
         """Initialise the TTS Application with ui elements
 
@@ -27,6 +27,8 @@ class TTSApp:
 
         pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
 
+        self.is_playing = False  # Guards against spamming playback, checked/set off the main thread
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -34,7 +36,7 @@ class TTSApp:
 
         self.root.geometry("500x300")
         self.root.title("TTSMic")
-        self.root.resizable(False, False) 
+        self.root.resizable(False, False)
 
         self.frame.place(relx=0.5, rely=0.5, anchor="center")
 
@@ -47,6 +49,9 @@ class TTSApp:
 
     def check_playback(self, file_name):
         """Loops until the music player isn't playing any music. From there, it deletes the audio file.
+
+        Runs via root.after, so this executes safely on the main thread.
+
         Args:
             file_name (str): Path to the temporary audio file to be deleted
         """
@@ -55,11 +60,13 @@ class TTSApp:
             self.root.after(150, self.check_playback, file_name)
         else:
             pygame.mixer.music.unload()
-            os.remove(file_name)
+            if os.path.exists(file_name):
+                os.remove(file_name)
+            self.is_playing = False
 
     def say_tts_input(self, event):
         """Calls say_tts from the entry bind.
-        
+
         Args:
             event: The tkinter event object (not used)
         """
@@ -67,14 +74,37 @@ class TTSApp:
         self.say_tts()
 
     def say_tts(self):
-        """Retrieves text in the entry box then turns it into speech in a .mp3 file."""
+        """Kicks off TTS generation and playback on a background thread."""
 
-        if pygame.mixer.music.get_busy(): return # Prevents spamming audio playback
+        if self.is_playing:
+            return  # Prevents spamming audio playback
+
+        self.is_playing = True
+
+        text = self.entry.get()
+
+        thread = threading.Thread(target=self._generate_and_play, args=(text,), daemon=True)
+        thread.start()
+
+    def _generate_and_play(self, text):
+        """Generates the TTS audio file and plays it to both outputs.
+
+        Runs entirely on a background thread. Network call (gTTS) and both
+        playback paths happen here so the main thread / UI never blocks.
+
+        Args:
+            text (str): The text to convert to speech
+        """
 
         file_name = f"{time.time()}.mp3"
 
-        tts = gTTS(text=self.entry.get(), lang='en')
-        tts.save(file_name)
+        try:
+            tts = gTTS(text=text, lang='en')
+            tts.save(file_name)
+        except Exception as e:
+            print(f"TTS generation failed: {e}")
+            self.is_playing = False
+            return
 
         mic = VirtualMic()
 
@@ -85,8 +115,8 @@ class TTSApp:
             pygame.mixer.music.load(file_name)
             pygame.mixer.music.play()
 
-        thread1 = threading.Thread(target=play_to_others) 
-        thread2 = threading.Thread(target=play_to_self) 
+        thread1 = threading.Thread(target=play_to_others)
+        thread2 = threading.Thread(target=play_to_self)
 
         thread1.start()
         thread2.start()
@@ -94,10 +124,9 @@ class TTSApp:
         thread1.join()
         thread2.join()
 
-        
-        pygame.mixer.music.unload()
-        os.remove(file_name)
-        
+        # Hand cleanup off to the main thread via after(), since it touches
+        # pygame.mixer state that check_playback also polls
+        self.root.after(0, self.check_playback, file_name)
 
     def run(self):
         """Start the main application loop."""
@@ -106,8 +135,3 @@ class TTSApp:
 if __name__ == "__main__":
     app = TTSApp()
     app.run()
-
-
-
-
-        

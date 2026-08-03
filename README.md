@@ -1,6 +1,5 @@
 # TTSMic
-A program that allows you to run clean TTS through your microphone.
-Written by Chill_Cube
+A program that allows you to run clean TTS through your microphone. This is a rewrite of an older version of the app I wrote back in January. It's the same, but has cleaner code and better UI.
 
 ## SETUP:
 Note: You can skip all of this by just downloading the release

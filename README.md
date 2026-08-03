@@ -1,6 +1,8 @@
 # TTSMic
 A program that allows you to run clean TTS through your microphone. This is a rewrite of an older version of the app I wrote back in January. It's the same, but has cleaner code and better UI.
 
+Note: This has only been tested on Windows, but should have support for MacOS. Linux does not have VB Cable so this app is not supported there.
+
 ## SETUP:
 Note: You can skip all of this by just downloading the release
 1) Download Python 3.10: https://www.python.org/downloads/release/python-3100/
